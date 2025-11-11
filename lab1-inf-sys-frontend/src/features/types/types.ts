@@ -1,3 +1,16 @@
+export interface CoordinatesDTO {
+    id: number;
+    x: number;
+    y: number;
+}
+
+export interface LocationDTO {
+    id: number;
+    x: number;
+    y: number;
+    z: number;
+}
+
 export interface Coordinates {
     x: number;
     y: number;
@@ -20,9 +33,10 @@ export interface Route {
     rating: number;
 }
 
-export interface PaginatedResponse<T> {
-    items: T[];
-    total: number;
-    page: number;
-    pageSize: number;
+export interface PageResponse<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
 }
