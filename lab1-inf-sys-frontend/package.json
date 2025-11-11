@@ -12,6 +12,7 @@
   "dependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-toastify": "^11.0.5",
     "sockjs-client": "^1.6.1",
     "src": "^1.1.2"
   },
