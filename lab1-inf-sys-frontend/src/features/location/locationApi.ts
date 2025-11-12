@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Location } from '../types/types';
+import type { LocationDTO } from '../types/types';
 
 export const locationApi = createApi({
     reducerPath: 'locationApi',
@@ -7,16 +7,16 @@ export const locationApi = createApi({
     tagTypes: ['Location'],
 
     endpoints: (builder) => ({
-        getAllLocations: builder.query<Location[], void>({
+        getAllLocations: builder.query<LocationDTO[], void>({
             query: () => `/`,
             providesTags: ['Location'],
         }),
 
-        getLocationById: builder.query<Location, number>({
+        getLocationById: builder.query<LocationDTO, number>({
             query: (id) => `/${id}`,
         }),
 
-        createLocation: builder.mutation<Location, Omit<Location, 'id'>>({
+        createLocation: builder.mutation<LocationDTO, LocationDTO>({
             query: (body) => ({
                 url: `/`,
                 method: 'POST',
@@ -25,11 +25,11 @@ export const locationApi = createApi({
             invalidatesTags: ['Location'],
         }),
 
-        updateLocation: builder.mutation<Location, { id: number; data: Location }>({
-            query: ({ id, data }) => ({
-                url: `/${id}`,
-                method: 'PUT',
-                body: data,
+        updateLocation: builder.mutation<LocationDTO, LocationDTO>({
+            query: (body) => ({
+                url: `/${body.id}`,
+                method: "PUT",
+                body,
             }),
             invalidatesTags: ['Location'],
         }),
