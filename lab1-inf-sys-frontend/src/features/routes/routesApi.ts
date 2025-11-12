@@ -10,7 +10,7 @@ export const routesApi = createApi({
 
     endpoints: (builder) => ({
         fetchRoutes: builder.query<PageResponse<Route>, { page: number; size: number }>({
-            query: ({ page, size }) => `/?page=${page}&size=${size}`,
+            query: ({ page, size }) => `/routes?page=${page}&size=${size}`,
             providesTags: ['Routes'],
         }),
 
@@ -43,6 +43,32 @@ export const routesApi = createApi({
             }),
             invalidatesTags: ['Routes'],
         }),
+
+        getMinDistanceRoute: builder.query<Route, void>({
+            query: () => `/routes/min-distance`,
+        }),
+
+        groupByRating: builder.query<Record<number, number>, void>({
+            query: () => `/routes/group-by-rating`,
+        }),
+
+        getUniqueRatings: builder.query<number[], void>({
+            query: () => `/routes/unique-ratings`,
+        }),
+
+        findRoutesBetween: builder.query<Route[], { fromId: number; toId: number; sortBy: string }>({
+            query: ({ fromId, toId, sortBy }) =>
+                `/routes/between?fromId=${fromId}&toId=${toId}&sortBy=${sortBy}`,
+        }),
+
+        addRouteBetween: builder.mutation<Route, { fromId: number; toId: number; body: any }>({
+            query: ({ fromId, toId, body }) => ({
+                url: `/routes/between?fromId=${fromId}&toId=${toId}`,
+                method: 'POST',
+                body,
+            }),
+            invalidatesTags: ['Routes'],
+        })
     }),
 });
 
@@ -52,4 +78,10 @@ export const {
     useCreateRouteMutation,
     useUpdateRouteMutation,
     useDeleteRouteMutation,
+
+    useGetMinDistanceRouteQuery,
+    useGroupByRatingQuery,
+    useGetUniqueRatingsQuery,
+    useFindRoutesBetweenQuery,
+    useAddRouteBetweenMutation,
 } = routesApi;
