@@ -1,16 +1,3 @@
-export interface CoordinatesDTO {
-    id: number;
-    x: number;
-    y: number;
-}
-
-export interface LocationDTO {
-    id: number;
-    x: number;
-    y: number;
-    z: number;
-}
-
 export interface Coordinates {
     x: number;
     y: number;
@@ -22,13 +9,21 @@ export interface Location {
     z: number;
 }
 
+export interface CoordinatesDTO extends Coordinates {
+    id: number;
+}
+
+export interface LocationDTO extends Location {
+    id: number;
+}
+
 export interface Route {
     id: number;
     name: string;
-    coordinates: Coordinates;
+    coordinates: CoordinatesDTO;
+    from: LocationDTO;
+    to: LocationDTO;
     creationDate: string;
-    from: Location;
-    to: Location;
     distance: number | null;
     rating: number;
 }
