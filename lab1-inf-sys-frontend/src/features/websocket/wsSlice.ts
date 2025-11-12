@@ -1,49 +1,39 @@
-import { createSlice } from '@reduxjs/toolkit';
-import { Client } from '@stomp/stompjs';
-import SockJS from 'sockjs-client';
-import { routesApi } from '../routes/routesApi';
-import type { AppDispatch } from '../../app/store';
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { Route } from "../types/types";
+import type { CoordinatesDTO } from "../types/types";
+import type { LocationDTO } from "../types/types";
 
-interface WebSocketState {
-    connected: boolean;
+interface WSEventPayload {
+    entity: "routes" | "coordinates" | "locations";
+    action: "create" | "update" | "delete";
+    dto: Route | CoordinatesDTO | LocationDTO;
 }
 
-const initialState: WebSocketState = {
+interface WSState {
+    connected: boolean;
+    lastEvent: WSEventPayload | null;
+}
+
+const initialState: WSState = {
     connected: false,
+    lastEvent: null,
 };
 
-const wsSlice = createSlice({
-    name: 'websocket',
+export const wsSlice = createSlice({
+    name: "ws",
     initialState,
     reducers: {
-        setConnected(state, action) {
-            state.connected = action.payload;
+        wsConnected(state) {
+            state.connected = true;
+        },
+        wsDisconnected(state) {
+            state.connected = false;
+        },
+        wsEventReceived(state, action: PayloadAction<WSEventPayload>) {
+            state.lastEvent = action.payload;
         },
     },
 });
 
-export const { setConnected } = wsSlice.actions;
+export const { wsConnected, wsDisconnected, wsEventReceived } = wsSlice.actions;
 export default wsSlice.reducer;
-
-
-export const initWebSocket = () => (dispatch: AppDispatch) => {
-    const socket = new SockJS('http://localhost:8080/ws');
-    const client = new Client({
-        webSocketFactory: () => socket as any,
-        reconnectDelay: 3000,
-    });
-
-    client.onConnect = () => {
-        dispatch(setConnected(true));
-
-        client.subscribe('/topic/routes', () => {
-            dispatch(routesApi.util.invalidateTags(['Routes']));
-        });
-    };
-
-    client.onStompError = () => {
-        dispatch(setConnected(false));
-    };
-
-    client.activate();
-};
