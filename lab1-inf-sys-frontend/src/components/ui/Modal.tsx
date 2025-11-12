@@ -1,36 +1,36 @@
 import React from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ModalProps {
-    open: boolean;
-    onClose: () => void;
-    title?: string;
+    title: string;
     children: React.ReactNode;
+    onClose: () => void;
+    actions?: React.ReactNode;
 }
 
-export const Modal: React.FC<ModalProps> = ({ open, onClose, title, children }) => {
-    if (!open) return null;
-
+export const Modal: React.FC<ModalProps> = ({ title, children, onClose, actions }) => {
     return (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 w-full max-w-md">
-
-                {title && (
-                    <h2 className="text-lg font-semibold mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
-                        {title}
-                    </h2>
-                )}
-
-                <div>{children}</div>
-
-                <div className="mt-4 flex justify-end">
-                    <button
-                        onClick={onClose}
-                        className="px-3 py-1 text-gray-600 dark:text-gray-300 hover:text-blue-500"
-                    >
-                        Закрыть
-                    </button>
-                </div>
-            </div>
-        </div>
+        <AnimatePresence>
+            <motion.div
+                className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+            >
+                <motion.div
+                    className="bg-white dark:bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-md"
+                    initial={{ scale: 0.9, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <h2 className="text-lg font-semibold mb-4">{title}</h2>
+                    <div className="mb-6">{children}</div>
+                    {actions && <div className="flex justify-end gap-3">{actions}</div>}
+                </motion.div>
+            </motion.div>
+        </AnimatePresence>
     );
 };
