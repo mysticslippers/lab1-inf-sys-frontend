@@ -1,62 +1,207 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useGetRouteByIdQuery } from "../../features/routes/routesApi";
-import { ArrowLeftIcon, PencilIcon } from "@heroicons/react/24/outline";
-import React from "react";
+import { useState } from "react";
+import { Button } from "../ui/Button.tsx";
+import { Input } from "../ui/Input.tsx";
+import { useGetAllCoordinatesQuery } from "../../features/coordinates/coordinatesApi";
+import { useGetAllLocationsQuery } from "../../features/location/locationApi";
+import type { CoordinatesDTO } from "../../features/types/types";
+import type { LocationDTO } from "../../features/types/types";
 
-const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
-    <div className="flex justify-between border-b border-gray-200 dark:border-gray-700 py-2">
-        <span className="font-medium text-gray-600 dark:text-gray-400">{label}:</span>
-        <span>{children}</span>
-    </div>
-);
+export interface RouteFormValues {
+    name: string;
+    distance: number | null;
+    rating: number;
 
-export default function RouteDetailsPage() {
-    const { id } = useParams();
-    const navigate = useNavigate();
+    coordinatesId?: number | null;
+    coordinates?: { x: number | null; y: number | null };
 
-    const { data, isLoading, isError } = useGetRouteByIdQuery(Number(id));
+    fromId?: number | null;
+    from?: { x: number; y: number; z: number };
 
-    if (isLoading) return <div className="text-center py-6">Загрузка...</div>;
-    if (isError || !data) return <div className="text-center text-red-500 py-6">Ошибка загрузки</div>;
+    toId?: number | null;
+    to?: { x: number; y: number; z: number };
+}
 
-    const route = data;
+interface RouteFormProps {
+    initialValues?: Partial<RouteFormValues>;
+    onSubmit: (values: RouteFormValues) => void;
+    submitText: string;
+}
+
+export function RouteForm({ initialValues, onSubmit, submitText }: RouteFormProps) {
+    const { data: coordinates } = useGetAllCoordinatesQuery() as { data: CoordinatesDTO[] | undefined };
+    const { data: locations } = useGetAllLocationsQuery() as { data: LocationDTO[] | undefined };
+
+    const [name, setName] = useState(initialValues?.name ?? "");
+    const [distance, setDistance] = useState<number | null>(initialValues?.distance ?? null);
+    const [rating, setRating] = useState<number>(initialValues?.rating ?? 1);
+
+    const [coordId, setCoordId] = useState<number | null>(initialValues?.coordinatesId ?? null);
+    const [fromId, setFromId] = useState<number | null>(initialValues?.fromId ?? null);
+    const [toId, setToId] = useState<number | null>(initialValues?.toId ?? null);
+
+    const [showCoordForm, setShowCoordForm] = useState(Boolean(initialValues?.coordinates));
+    const [showFromForm, setShowFromForm] = useState(Boolean(initialValues?.from));
+    const [showToForm, setShowToForm] = useState(Boolean(initialValues?.to));
+
+    const [coord, setCoord] = useState({
+        x: initialValues?.coordinates?.x ?? null,
+        y: initialValues?.coordinates?.y ?? null,
+    });
+
+    const [from, setFrom] = useState({
+        x: initialValues?.from?.x ?? 0,
+        y: initialValues?.from?.y ?? 0,
+        z: initialValues?.from?.z ?? 0,
+    });
+
+    const [to, setTo] = useState({
+        x: initialValues?.to?.x ?? 0,
+        y: initialValues?.to?.y ?? 0,
+        z: initialValues?.to?.z ?? 0,
+    });
+
+    const handleSubmit = () => {
+        onSubmit({
+            name,
+            distance,
+            rating,
+
+            coordinatesId: !showCoordForm ? coordId : undefined,
+            coordinates: showCoordForm ? coord : undefined,
+
+            fromId: !showFromForm ? fromId : undefined,
+            from: showFromForm ? from : undefined,
+
+            toId: !showToForm ? toId : undefined,
+            to: showToForm ? to : undefined,
+        });
+    };
 
     return (
-        <div className="max-w-2xl mx-auto">
-            <button
-                className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:text-blue-500"
-                onClick={() => navigate("/")}>
-                <ArrowLeftIcon className="h-4" />
-                Назад
-            </button>
+        <div className="space-y-6">
 
-            <div className="mt-4 p-6 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
-                <h2 className="text-lg font-semibold mb-4">
-                    Маршрут №{route.id} — {route.name}
-                </h2>
+            <div className="p-6 border rounded-lg dark:border-gray-700 dark:bg-gray-800 space-y-4">
+                <Input label="Название" value={name} onChange={(e) => setName(e.target.value)} />
 
-                <Field label="Дата создания">{route.creationDate}</Field>
-                <Field label="Distance">{route.distance ?? "—"}</Field>
-                <Field label="Rating">{route.rating}</Field>
+                <Input
+                    label="Дистанция (может быть пустой)"
+                    type="number"
+                    value={distance ?? ""}
+                    onChange={(e) => setDistance(e.target.value ? Number(e.target.value) : null)}
+                />
 
-                <h3 className="text-md font-semibold mt-4 mb-1">From</h3>
-                <Field label="x">{route.from.x}</Field>
-                <Field label="y">{route.from.y}</Field>
-                <Field label="z">{route.from.z}</Field>
-
-                <h3 className="text-md font-semibold mt-4 mb-1">To</h3>
-                <Field label="x">{route.to.x}</Field>
-                <Field label="y">{route.to.y}</Field>
-                <Field label="z">{route.to.z}</Field>
+                <Input
+                    label="Rating (> 0)"
+                    type="number"
+                    value={rating}
+                    onChange={(e) => setRating(Number(e.target.value))}
+                />
             </div>
 
-            <div className="flex justify-end mt-6">
-                <button
-                    onClick={() => navigate(`/update/${route.id}`)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white transition">
-                    <PencilIcon className="h-5" />
-                    Редактировать
-                </button>
+            <section className="p-6 border rounded-lg dark:border-gray-700 dark:bg-gray-800 space-y-4">
+                <h3 className="font-semibold">Coordinates</h3>
+
+                {!showCoordForm ? (
+                    <>
+                        <select
+                            className="px-3 py-2 rounded-md bg-white dark:bg-gray-700"
+                            value={coordId ?? ""}
+                            onChange={(e) => setCoordId(Number(e.target.value))}
+                        >
+                            <option value="">Выбрать...</option>
+                            {coordinates?.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                    {c.id}: ({c.x}, {c.y})
+                                </option>
+                            ))}
+                        </select>
+
+                        <Button variant="ghost" onClick={() => setShowCoordForm(true)}>
+                            + Создать новые coordinates
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Input label="X" type="number" onChange={(e) => setCoord({ ...coord, x: Number(e.target.value) })} />
+                        <Input label="Y" type="number" onChange={(e) => setCoord({ ...coord, y: Number(e.target.value) })} />
+
+                        <Button variant="secondary" onClick={() => setShowCoordForm(false)}>
+                            Использовать существующие
+                        </Button>
+                    </>
+                )}
+            </section>
+
+            <section className="p-6 border rounded-lg dark:border-gray-700 dark:bg-gray-800 space-y-4">
+                <h3 className="font-semibold">From (Location)</h3>
+
+                {!showFromForm ? (
+                    <>
+                        <select
+                            className="px-3 py-2 rounded-md bg-white dark:bg-gray-700"
+                            value={fromId ?? ""}
+                            onChange={(e) => setFromId(Number(e.target.value))}
+                        >
+                            <option value="">Выбрать...</option>
+                            {locations?.map((l) => (
+                                <option key={l.id} value={l.id}>
+                                    {l.id}: ({l.x}, {l.y}, {l.z})
+                                </option>
+                            ))}
+                        </select>
+                        <Button variant="ghost" onClick={() => setShowFromForm(true)}>
+                            + Создать новую локацию
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Input label="X" type="number" onChange={(e) => setFrom({ ...from, x: Number(e.target.value) })} />
+                        <Input label="Y" type="number" onChange={(e) => setFrom({ ...from, y: Number(e.target.value) })} />
+                        <Input label="Z" type="number" onChange={(e) => setFrom({ ...from, z: Number(e.target.value) })} />
+
+                        <Button variant="secondary" onClick={() => setShowFromForm(false)}>
+                            Использовать существующие
+                        </Button>
+                    </>
+                )}
+            </section>
+
+            <section className="p-6 border rounded-lg dark:border-gray-700 dark:bg-gray-800 space-y-4">
+                <h3 className="font-semibold">To (Location)</h3>
+
+                {!showToForm ? (
+                    <>
+                        <select
+                            className="px-3 py-2 rounded-md bg-white dark:bg-gray-700"
+                            value={toId ?? ""}
+                            onChange={(e) => setToId(Number(e.target.value))}
+                        >
+                            <option value="">Выбрать...</option>
+                            {locations?.map((l) => (
+                                <option key={l.id} value={l.id}>
+                                    {l.id}: ({l.x}, {l.y}, {l.z})
+                                </option>
+                            ))}
+                        </select>
+                        <Button variant="ghost" onClick={() => setShowToForm(true)}>
+                            + Создать новую локацию
+                        </Button>
+                    </>
+                ) : (
+                    <>
+                        <Input label="X" type="number" onChange={(e) => setTo({ ...to, x: Number(e.target.value) })} />
+                        <Input label="Y" type="number" onChange={(e) => setTo({ ...to, y: Number(e.target.value) })} />
+                        <Input label="Z" type="number" onChange={(e) => setTo({ ...to, z: Number(e.target.value) })} />
+
+                        <Button variant="secondary" onClick={() => setShowToForm(false)}>
+                            Использовать существующие
+                        </Button>
+                    </>
+                )}
+            </section>
+
+            <div className="text-right">
+                <Button onClick={handleSubmit}>{submitText}</Button>
             </div>
         </div>
     );
