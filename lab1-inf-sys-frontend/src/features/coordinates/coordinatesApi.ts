@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { Coordinates } from '../types/types.ts';
+import type { CoordinatesDTO } from '../types/types.ts';
 
 export const coordinatesApi = createApi({
     reducerPath: 'coordinatesApi',
@@ -7,32 +7,33 @@ export const coordinatesApi = createApi({
     tagTypes: ['Coordinates'],
 
     endpoints: (builder) => ({
-        getAllCoordinates: builder.query<Coordinates[], void>({
+        getAllCoordinates: builder.query<CoordinatesDTO[], void>({
             query: () => `/`,
             providesTags: ['Coordinates'],
         }),
 
-        getCoordinatesById: builder.query<Coordinates, number>({
+        getCoordinatesById: builder.query<CoordinatesDTO, number>({
             query: (id) => `/${id}`,
         }),
 
-        createCoordinates: builder.mutation<Coordinates, Omit<Coordinates, 'id'>>({
+        createCoordinates: builder.mutation<CoordinatesDTO, CoordinatesDTO>({
             query: (body) => ({
                 url: `/`,
-                method: 'POST',
+                method: "POST",
                 body,
             }),
-            invalidatesTags: ['Coordinates'],
+            invalidatesTags: ["Coordinates"],
         }),
 
-        updateCoordinates: builder.mutation<Coordinates, { id: number; data: Coordinates }>({
-            query: ({ id, data }) => ({
-                url: `/${id}`,
-                method: 'PUT',
-                body: data,
+        updateCoordinates: builder.mutation<CoordinatesDTO, CoordinatesDTO>({
+            query: (body) => ({
+                url: `/${body.id}`,
+                method: "PUT",
+                body,
             }),
-            invalidatesTags: ['Coordinates'],
+            invalidatesTags: ["Coordinates"],
         }),
+
 
         deleteCoordinates: builder.mutation<void, number>({
             query: (id) => ({
