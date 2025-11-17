@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { coordinatesApi } from '../api/coordinatesApi';
-import type { RootState, AppDispatch } from '../store';
-import {
-    fetchCoordinates,
-    deleteCoordinates,
-} from '../store/coordinatesSlice';
+import type { RootState } from '../store';
+import type { AppDispatch } from '../store';
+import type { CoordinatesDTO } from '../types/coordinates';
 import CoordinatesTable from '../components/coordinates/CoordinatesTable';
 import CoordinatesFormModal from '../components/coordinates/CoordinatesFormModal';
-import type { CoordinatesDTO } from '../types/coordinates';
+import Spinner from '../components/common/Spinner';
+import { toast } from 'react-toastify';
+import {
+    fetchCoordinates,
+    createCoordinates,
+    updateCoordinates,
+    deleteCoordinates,
+} from '../store/coordinatesSlice';
+import { coordinatesApi } from '../api/coordinatesApi';
 
 const CoordinatesPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -16,13 +21,17 @@ const CoordinatesPage: React.FC = () => {
         (state: RootState) => state.coordinates
     );
 
+    const [modalOpen, setModalOpen] = useState(false);
+    const [editingCoords, setEditingCoords] = useState<CoordinatesDTO | null>(
+        null
+    );
+
     const [searchId, setSearchId] = useState('');
     const [searchResult, setSearchResult] = useState<CoordinatesDTO | null>(null);
-    const [searchStatus, setSearchStatus] = useState<'idle' | 'loading' | 'succeeded' | 'failed'>('idle');
+    const [searchStatus, setSearchStatus] = useState<
+        'idle' | 'loading' | 'succeeded' | 'failed'
+    >('idle');
     const [searchError, setSearchError] = useState<string | null>(null);
-
-    const [modalOpen, setModalOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<CoordinatesDTO | null>(null);
 
     useEffect(() => {
         if (status === 'idle') {
@@ -30,10 +39,58 @@ const CoordinatesPage: React.FC = () => {
         }
     }, [dispatch, status]);
 
-    const handleCreate = () => {
-        setEditingItem(null);
+
+    const handleOpenCreate = () => {
+        setEditingCoords(null);
         setModalOpen(true);
     };
+
+    const handleEdit = (coord: CoordinatesDTO) => {
+        setEditingCoords(coord);
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setModalOpen(false);
+        setEditingCoords(null);
+    };
+
+    const handleSubmit = async (dto: CoordinatesDTO) => {
+        try {
+            if (editingCoords && editingCoords.id != null) {
+                await dispatch(
+                    updateCoordinates({ id: editingCoords.id, dto })
+                ).unwrap();
+                toast.success('Координаты обновлены');
+            } else {
+                await dispatch(createCoordinates(dto)).unwrap();
+                toast.success('Координаты созданы');
+            }
+            handleCloseModal();
+        } catch (err: any) {
+            const msg =
+                err?.response?.data?.message ??
+                err?.message ??
+                'Ошибка при сохранении координат';
+            toast.error(msg);
+        }
+    };
+
+    const handleDelete = async (coord: CoordinatesDTO) => {
+        if (!coord.id) return;
+        if (!window.confirm(`Удалить координаты #${coord.id}?`)) return;
+        try {
+            await dispatch(deleteCoordinates(coord.id)).unwrap();
+            toast.success('Координаты удалены');
+        } catch (err: any) {
+            const msg =
+                err?.response?.data?.message ??
+                err?.message ??
+                'Не удалось удалить координаты';
+            toast.error(msg);
+        }
+    };
+
 
     const handleSearchById = async () => {
         setSearchError(null);
@@ -67,44 +124,47 @@ const CoordinatesPage: React.FC = () => {
         }
     };
 
-
-    const handleEdit = (item: CoordinatesDTO) => {
-        setEditingItem(item);
-        setModalOpen(true);
+    const handleResetSearch = () => {
+        setSearchId('');
+        setSearchResult(null);
+        setSearchError(null);
+        setSearchStatus('idle');
     };
 
-    const handleDelete = (item: CoordinatesDTO) => {
-        if (!item.id) return;
 
-        const confirmed = window.confirm(
-            `Удалить координаты #${item.id} (x=${item.x}, y=${item.y})?`
+    if (status === 'loading' && items.length === 0) {
+        return (
+            <section className="space-y-4">
+                <h2 className="text-xl font-semibold mb-2">Координаты</h2>
+                <div className="flex items-center justify-center py-16">
+                    <div className="flex flex-col items-center gap-3 text-slate-300">
+                        <Spinner />
+                        <span className="text-sm">Загружаем координаты...</span>
+                    </div>
+                </div>
+            </section>
         );
-        if (!confirmed) return;
-
-        dispatch(deleteCoordinates(item.id))
-            .unwrap()
-            .catch((err: any) => {
-                const msg =
-                    err?.response?.data?.message ??
-                    err?.message ??
-                    'Не удалось удалить координаты. Возможно, они используются в маршрутах.';
-                alert(msg);
-            });
-    };
+    }
 
     return (
-        <section className="space-y-4">
+        <section className="space-y-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Координаты</h2>
+                <h2 className="text-xl font-semibold">Координаты</h2>
                 <button
-                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-500"
-                    onClick={handleCreate}
+                    className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                    onClick={handleOpenCreate}
                 >
                     Добавить координаты
                 </button>
             </div>
 
-            <div className="rounded-xl border border-slate-800 bg-slate-900/70 p-4 text-sm">
+            {error && (
+                <div className="rounded-lg border border-rose-500/60 bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                    {error}
+                </div>
+            )}
+
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4 text-sm">
                 <h3 className="mb-2 font-medium">Поиск координат по ID</h3>
                 <div className="flex flex-wrap gap-2">
                     <input
@@ -112,6 +172,7 @@ const CoordinatesPage: React.FC = () => {
                         placeholder="ID координат"
                         value={searchId}
                         onChange={(e) => setSearchId(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearchById()}
                     />
                     <button
                         className="rounded-xl bg-slate-800 px-4 py-2 text-xs font-medium hover:bg-slate-700 disabled:opacity-60"
@@ -122,12 +183,7 @@ const CoordinatesPage: React.FC = () => {
                     </button>
                     <button
                         className="rounded-xl border border-slate-600 px-3 py-2 text-xs hover:bg-slate-800"
-                        onClick={() => {
-                            setSearchId('');
-                            setSearchResult(null);
-                            setSearchError(null);
-                            setSearchStatus('idle');
-                        }}
+                        onClick={handleResetSearch}
                     >
                         Сбросить
                     </button>
@@ -142,7 +198,7 @@ const CoordinatesPage: React.FC = () => {
                         <p className="mb-1 text-xs text-slate-400">
                             Результат поиска (координаты с id={searchResult.id}):
                         </p>
-                        <div className="rounded-lg border border-slate-800 bg-slate-950/70">
+                        <div className="rounded-xl border border-slate-800 bg-slate-950/70">
                             <CoordinatesTable
                                 items={[searchResult]}
                                 onEdit={handleEdit}
@@ -153,26 +209,27 @@ const CoordinatesPage: React.FC = () => {
                 )}
             </div>
 
-            {status === 'loading' && (
-                <div className="text-sm text-slate-400">Загрузка...</div>
-            )}
-
-            {status === 'failed' && (
-                <div className="text-sm text-rose-400">
-                    Ошибка загрузки: {error ?? 'неизвестная ошибка'}
-                </div>
-            )}
-
             <CoordinatesTable
                 items={items}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
             />
 
+            {items.length === 0 && !error && status === 'succeeded' && !searchResult && (
+                <p className="text-sm text-slate-400">
+                    Координат пока нет. Нажмите{' '}
+                    <span className="font-medium text-emerald-400">
+            «Добавить координаты»
+          </span>
+                    , чтобы создать первую запись.
+                </p>
+            )}
+
             <CoordinatesFormModal
                 open={modalOpen}
-                initialItem={editingItem}
-                onClose={() => setModalOpen(false)}
+                initialItem={editingCoords}
+                onClose={handleCloseModal}
+                onSubmit={handleSubmit}
             />
         </section>
     );
