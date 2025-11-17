@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface Props {
-    page: number;          // 0-based
+    page: number;
     size: number;
     totalPages: number;
     onChange: (newPage: number) => void;
