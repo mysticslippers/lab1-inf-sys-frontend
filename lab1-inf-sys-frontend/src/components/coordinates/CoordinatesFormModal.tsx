@@ -1,16 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { CoordinatesDTO } from '../../types/coordinates';
-import { useDispatch } from 'react-redux';
-import type { AppDispatch } from '../../store';
-import {
-    createCoordinates,
-    updateCoordinates,
-} from '../../store/coordinatesSlice';
+import Spinner from '../common/Spinner';
 
 interface Props {
     open: boolean;
     initialItem?: CoordinatesDTO | null;
     onClose: () => void;
+    onSubmit: (dto: CoordinatesDTO) => Promise<void> | void;
 }
 
 interface Errors {
@@ -22,13 +18,16 @@ const CoordinatesFormModal: React.FC<Props> = ({
                                                    open,
                                                    initialItem,
                                                    onClose,
+                                                   onSubmit,
                                                }) => {
-    const dispatch = useDispatch<AppDispatch>();
-
     const isEdit = Boolean(initialItem?.id);
 
-    const [x, setX] = useState(initialItem?.x != null ? String(initialItem.x) : '');
-    const [y, setY] = useState(initialItem?.y != null ? String(initialItem.y) : '');
+    const [x, setX] = useState(
+        initialItem?.x != null ? String(initialItem.x) : ''
+    );
+    const [y, setY] = useState(
+        initialItem?.y != null ? String(initialItem.y) : ''
+    );
     const [errors, setErrors] = useState<Errors>({});
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -87,13 +86,7 @@ const CoordinatesFormModal: React.FC<Props> = ({
 
         setSubmitting(true);
         try {
-            if (isEdit && initialItem?.id != null) {
-                await dispatch(
-                    updateCoordinates({ id: initialItem.id, dto })
-                ).unwrap();
-            } else {
-                await dispatch(createCoordinates(dto)).unwrap();
-            }
+            await onSubmit(dto);
             handleClose();
         } catch (err: any) {
             console.error(err);
@@ -168,16 +161,13 @@ const CoordinatesFormModal: React.FC<Props> = ({
                         </button>
                         <button
                             type="submit"
-                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
                             disabled={submitting}
                         >
-                            {submitting
-                                ? isEdit
-                                    ? 'Сохранение...'
-                                    : 'Создание...'
-                                : isEdit
-                                    ? 'Сохранить'
-                                    : 'Создать'}
+                            {submitting && <Spinner size="sm" />}
+                            <span>
+                                {isEdit ? 'Сохранить' : 'Создать'}
+                            </span>
                         </button>
                     </div>
                 </form>
