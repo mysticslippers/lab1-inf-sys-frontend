@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import type { LocationDTO } from '../../types/location';
-import { useDispatch } from 'react-redux';
-import type { AppDispatch } from '../../store';
-import { createLocation, updateLocation } from '../../store/locationsSlice';
+import Spinner from '../common/Spinner';
 
 interface Props {
     open: boolean;
     initialItem?: LocationDTO | null;
     onClose: () => void;
+    onSubmit: (dto: LocationDTO) => Promise<void> | void;
 }
 
 interface Errors {
@@ -20,13 +19,19 @@ const LocationFormModal: React.FC<Props> = ({
                                                 open,
                                                 initialItem,
                                                 onClose,
+                                                onSubmit,
                                             }) => {
-    const dispatch = useDispatch<AppDispatch>();
     const isEdit = Boolean(initialItem?.id);
 
-    const [x, setX] = useState(initialItem?.x != null ? String(initialItem.x) : '');
-    const [y, setY] = useState(initialItem?.y != null ? String(initialItem.y) : '');
-    const [z, setZ] = useState(initialItem?.z != null ? String(initialItem.z) : '');
+    const [x, setX] = useState(
+        initialItem?.x != null ? String(initialItem.x) : ''
+    );
+    const [y, setY] = useState(
+        initialItem?.y != null ? String(initialItem.y) : ''
+    );
+    const [z, setZ] = useState(
+        initialItem?.z != null ? String(initialItem.z) : ''
+    );
     const [errors, setErrors] = useState<Errors>({});
     const [submitting, setSubmitting] = useState(false);
     const [submitError, setSubmitError] = useState<string | null>(null);
@@ -46,21 +51,18 @@ const LocationFormModal: React.FC<Props> = ({
     const validate = (): boolean => {
         const next: Errors = {};
 
-        // x — опционально, но если задано, то целое
         if (x.trim()) {
             if (!Number.isInteger(Number(x))) {
                 next.x = 'X должен быть целым числом (Long) или пустым';
             }
         }
 
-        // y — обязателен, целое
         if (!y.trim()) {
             next.y = 'Y обязателен';
         } else if (!Number.isInteger(Number(y))) {
             next.y = 'Y должен быть целым числом (Long)';
         }
 
-        // z — обязательный Double
         if (!z.trim()) {
             next.z = 'Z обязателен';
         } else if (Number.isNaN(Number(z))) {
@@ -84,18 +86,14 @@ const LocationFormModal: React.FC<Props> = ({
 
         const dto: LocationDTO = {
             id: initialItem?.id,
-            x: x.trim() ? Number(x) : null as any, // DTO позволяет null
+            x: x.trim() ? Number(x) : null as any,
             y: Number(y),
             z: Number(z),
         };
 
         setSubmitting(true);
         try {
-            if (isEdit && initialItem?.id != null) {
-                await dispatch(updateLocation({ id: initialItem.id, dto })).unwrap();
-            } else {
-                await dispatch(createLocation(dto)).unwrap();
-            }
+            await onSubmit(dto);
             handleClose();
         } catch (err: any) {
             console.error(err);
@@ -184,17 +182,15 @@ const LocationFormModal: React.FC<Props> = ({
                         </button>
                         <button
                             type="submit"
-                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
                             disabled={submitting}
                         >
-                            {submitting
-                                ? isEdit
-                                    ? 'Сохранение...'
-                                    : 'Создание...'
-                                : isEdit
-                                    ? 'Сохранить'
-                                    : 'Создать'}
+                            {submitting && <Spinner size="sm" />}
+                            <span>
+                                {isEdit ? 'Сохранить' : 'Создать'}
+                            </span>
                         </button>
+
                     </div>
                 </form>
             </div>
