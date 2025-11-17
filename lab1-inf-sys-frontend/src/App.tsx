@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { ToastContainer } from 'react-toastify';
 import { useDispatch } from 'react-redux';
 import type { AppDispatch } from './store';
 import { wsService } from './api/wsClient';
@@ -95,6 +96,15 @@ const App: React.FC = () => {
                 {activeTab === 'coordinates' && <CoordinatesPage />}
                 {activeTab === 'special' && <SpecialOperationsPage />}
             </main>
+
+            <ToastContainer
+                position="bottom-right"
+                theme="dark"
+                autoClose={2500}
+                pauseOnHover
+                closeOnClick
+                newestOnTop
+            />
         </div>
     );
 };
