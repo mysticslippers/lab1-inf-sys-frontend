@@ -1,17 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import type { RouteDTO } from '../../types/route';
+import Spinner from '../common/Spinner';
 import type { LocationDTO } from '../../types/location';
 import type { CoordinatesDTO } from '../../types/coordinates';
 import { locationsApi } from '../../api/locationsApi';
 import { coordinatesApi } from '../../api/coordinatesApi';
-import { useDispatch } from 'react-redux';
-import type { AppDispatch } from '../../store';
-import { createRoute, updateRoute } from '../../store/routesSlice';
 
 interface RouteFormModalProps {
     open: boolean;
     initialRoute?: RouteDTO | null;
     onClose: () => void;
+    onSubmit: (dto: RouteDTO) => Promise<void> | void;
 }
 
 type Mode = 'existing' | 'new';
@@ -24,8 +23,8 @@ const RouteFormModal: React.FC<RouteFormModalProps> = ({
                                                            open,
                                                            initialRoute,
                                                            onClose,
+                                                           onSubmit,
                                                        }) => {
-    const dispatch = useDispatch<AppDispatch>();
 
     const [locations, setLocations] = useState<LocationDTO[]>([]);
     const [coordinatesList, setCoordinatesList] = useState<CoordinatesDTO[]>([]);
@@ -336,13 +335,7 @@ const RouteFormModal: React.FC<RouteFormModalProps> = ({
 
         setSubmitting(true);
         try {
-            if (isEdit && initialRoute?.id != null) {
-                await dispatch(
-                    updateRoute({ id: initialRoute.id, dto })
-                ).unwrap();
-            } else {
-                await dispatch(createRoute(dto)).unwrap();
-            }
+            await onSubmit(dto);
             handleClose();
         } catch (err: any) {
             console.error(err);
@@ -382,7 +375,6 @@ const RouteFormModal: React.FC<RouteFormModalProps> = ({
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-                    {/* Основные поля */}
                     <div className="grid gap-4 md:grid-cols-2">
                         <div>
                             <label className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
@@ -733,16 +725,11 @@ const RouteFormModal: React.FC<RouteFormModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
+                            className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-60"
                             disabled={submitting}
                         >
-                            {submitting
-                                ? isEdit
-                                    ? 'Сохранение...'
-                                    : 'Создание...'
-                                : isEdit
-                                    ? 'Сохранить'
-                                    : 'Создать'}
+                            {submitting && <Spinner size="sm" />}
+                            <span>{isEdit ? 'Сохранить' : 'Создать'}</span>
                         </button>
                     </div>
                 </form>
