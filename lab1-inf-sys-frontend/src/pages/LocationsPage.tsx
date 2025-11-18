@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import type { AppDispatch } from '../store';
+import type { RootState, AppDispatch } from '../store';
 import type { LocationDTO } from '../types/location';
+
 import LocationsTable from '../components/locations/LocationsTable';
 import LocationFormModal from '../components/locations/LocationFormModal';
 import Spinner from '../components/common/Spinner';
+
 import { toast } from 'react-toastify';
 import {
     fetchLocations,
@@ -14,6 +15,7 @@ import {
     deleteLocation,
 } from '../store/locationsSlice';
 import { locationsApi } from '../api/locationsApi';
+import { getApiErrorMessage } from '../utils/errorUtils';
 
 const LocationsPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -67,11 +69,8 @@ const LocationsPage: React.FC = () => {
                 toast.success('Локация создана');
             }
             handleCloseModal();
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ??
-                err?.message ??
-                'Ошибка при сохранении локации';
+        } catch (err) {
+            const msg = getApiErrorMessage(err, 'Ошибка при сохранении локации');
             toast.error(msg);
         }
     };
@@ -82,11 +81,11 @@ const LocationsPage: React.FC = () => {
         try {
             await dispatch(deleteLocation(loc.id)).unwrap();
             toast.success('Локация удалена');
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ??
-                err?.message ??
-                'Не удалось удалить локацию';
+        } catch (err) {
+            const msg = getApiErrorMessage(
+                err,
+                'Не удалось удалить локацию'
+            );
             toast.error(msg);
         }
     };
@@ -112,13 +111,11 @@ const LocationsPage: React.FC = () => {
             const loc = await locationsApi.getById(idNum);
             setSearchResult(loc);
             setSearchStatus('succeeded');
-        } catch (err: any) {
-            const msg =
-                err?.response?.status === 404
-                    ? `Локация с id=${idNum} не найдена`
-                    : err?.response?.data?.message ??
-                    err?.message ??
-                    'Ошибка при получении локации';
+        } catch (err) {
+            const msg = getApiErrorMessage(
+                err,
+                'Ошибка при получении локации'
+            );
             setSearchError(msg);
             setSearchStatus('failed');
         }
@@ -135,7 +132,7 @@ const LocationsPage: React.FC = () => {
     if (status === 'loading' && items.length === 0) {
         return (
             <section className="space-y-4">
-                <h2 className="text-xl font-semibold mb-2">Локации</h2>
+                <h2 className="mb-2 text-xl font-semibold">Локации</h2>
                 <div className="flex items-center justify-center py-16">
                     <div className="flex flex-col items-center gap-3 text-slate-300">
                         <Spinner />
@@ -215,15 +212,18 @@ const LocationsPage: React.FC = () => {
                 onDelete={handleDelete}
             />
 
-            {items.length === 0 && !error && status === 'succeeded' && !searchResult && (
-                <p className="text-sm text-slate-400">
-                    Локаций пока нет. Нажмите{' '}
-                    <span className="font-medium text-emerald-400">
-            «Добавить локацию»
-          </span>
-                    , чтобы создать первую.
-                </p>
-            )}
+            {items.length === 0 &&
+                !error &&
+                status === 'succeeded' &&
+                !searchResult && (
+                    <p className="text-sm text-slate-400">
+                        Локаций пока нет. Нажмите{' '}
+                        <span className="font-medium text-emerald-400">
+              «Добавить локацию»
+            </span>
+                        , чтобы создать первую.
+                    </p>
+                )}
 
             <LocationFormModal
                 open={modalOpen}
