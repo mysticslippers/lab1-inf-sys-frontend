@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
-import type { AppDispatch } from '../store';
+import type { RootState, AppDispatch } from '../store';
 import type { CoordinatesDTO } from '../types/coordinates';
+
 import CoordinatesTable from '../components/coordinates/CoordinatesTable';
 import CoordinatesFormModal from '../components/coordinates/CoordinatesFormModal';
 import Spinner from '../components/common/Spinner';
+
 import { toast } from 'react-toastify';
 import {
     fetchCoordinates,
@@ -14,6 +15,7 @@ import {
     deleteCoordinates,
 } from '../store/coordinatesSlice';
 import { coordinatesApi } from '../api/coordinatesApi';
+import { getApiErrorMessage } from '../utils/errorUtils';
 
 const CoordinatesPage: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -67,11 +69,11 @@ const CoordinatesPage: React.FC = () => {
                 toast.success('Координаты созданы');
             }
             handleCloseModal();
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ??
-                err?.message ??
-                'Ошибка при сохранении координат';
+        } catch (err) {
+            const msg = getApiErrorMessage(
+                err,
+                'Ошибка при сохранении координат'
+            );
             toast.error(msg);
         }
     };
@@ -82,11 +84,11 @@ const CoordinatesPage: React.FC = () => {
         try {
             await dispatch(deleteCoordinates(coord.id)).unwrap();
             toast.success('Координаты удалены');
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ??
-                err?.message ??
-                'Не удалось удалить координаты';
+        } catch (err) {
+            const msg = getApiErrorMessage(
+                err,
+                'Не удалось удалить координаты'
+            );
             toast.error(msg);
         }
     };
@@ -112,13 +114,11 @@ const CoordinatesPage: React.FC = () => {
             const coord = await coordinatesApi.getById(idNum);
             setSearchResult(coord);
             setSearchStatus('succeeded');
-        } catch (err: any) {
-            const msg =
-                err?.response?.status === 404
-                    ? `Координаты с id=${idNum} не найдены`
-                    : err?.response?.data?.message ??
-                    err?.message ??
-                    'Ошибка при получении координат';
+        } catch (err) {
+            const msg = getApiErrorMessage(
+                err,
+                'Ошибка при получении координат'
+            );
             setSearchError(msg);
             setSearchStatus('failed');
         }
@@ -135,7 +135,7 @@ const CoordinatesPage: React.FC = () => {
     if (status === 'loading' && items.length === 0) {
         return (
             <section className="space-y-4">
-                <h2 className="text-xl font-semibold mb-2">Координаты</h2>
+                <h2 className="mb-2 text-xl font-semibold">Координаты</h2>
                 <div className="flex items-center justify-center py-16">
                     <div className="flex flex-col items-center gap-3 text-slate-300">
                         <Spinner />
@@ -215,15 +215,18 @@ const CoordinatesPage: React.FC = () => {
                 onDelete={handleDelete}
             />
 
-            {items.length === 0 && !error && status === 'succeeded' && !searchResult && (
-                <p className="text-sm text-slate-400">
-                    Координат пока нет. Нажмите{' '}
-                    <span className="font-medium text-emerald-400">
-            «Добавить координаты»
-          </span>
-                    , чтобы создать первую запись.
-                </p>
-            )}
+            {items.length === 0 &&
+                !error &&
+                status === 'succeeded' &&
+                !searchResult && (
+                    <p className="text-sm text-slate-400">
+                        Координат пока нет. Нажмите{' '}
+                        <span className="font-medium text-emerald-400">
+              «Добавить координаты»
+            </span>
+                        , чтобы создать первую запись.
+                    </p>
+                )}
 
             <CoordinatesFormModal
                 open={modalOpen}
