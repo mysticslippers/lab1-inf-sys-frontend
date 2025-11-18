@@ -1,8 +1,8 @@
-// src/pages/RoutesPage.tsx
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { RootState, AppDispatch } from '../store';
 import type { RouteDTO } from '../types/route';
+import { getApiErrorMessage } from '../utils/errorUtils';
 
 import { routesApi } from '../api/routesApi';
 import {
@@ -69,11 +69,8 @@ const RoutesPage: React.FC = () => {
                 toast.success('Маршрут создан');
             }
             handleCloseModal();
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ??
-                err?.message ??
-                'Ошибка при сохранении маршрута';
+        } catch (err) {
+            const msg = getApiErrorMessage(err, 'Ошибка при сохранении маршрута');
             toast.error(msg);
         }
     };
@@ -85,11 +82,8 @@ const RoutesPage: React.FC = () => {
         try {
             await dispatch(deleteRoute(route.id)).unwrap();
             toast.success('Маршрут удалён');
-        } catch (err: any) {
-            const msg =
-                err?.response?.data?.message ??
-                err?.message ??
-                'Не удалось удалить маршрут';
+        } catch (err) {
+            const msg = getApiErrorMessage(err, 'Не удалось удалить маршрут');
             toast.error(msg);
         }
     };
@@ -115,15 +109,9 @@ const RoutesPage: React.FC = () => {
             const route = await routesApi.getById(idNum);
             setSearchResult(route);
             setSearchStatus('succeeded');
-        } catch (err: any) {
-            const msg =
-                err?.response?.status === 404
-                    ? `Маршрут с id=${idNum} не найден`
-                    : err?.response?.data?.message ??
-                    err?.message ??
-                    'Ошибка при получении маршрута';
+        } catch (err) {
+            const msg = getApiErrorMessage(err, 'Ошибка при получении маршрута');
             setSearchError(msg);
-            setSearchStatus('failed');
         }
     };
 
