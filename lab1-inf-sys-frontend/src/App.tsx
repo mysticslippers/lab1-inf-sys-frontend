@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { useDispatch } from 'react-redux';
+
 import type { AppDispatch } from './store';
 import { wsService } from './api/wsClient';
+
 import RoutesPage from './pages/RoutesPage';
 import LocationsPage from './pages/LocationsPage';
 import CoordinatesPage from './pages/CoordinatesPage';
 import SpecialOperationsPage from './pages/SpecialOperationsPage';
+
 import {
     fetchRoutesPage,
     applyWebSocketEvent as applyRoutesWs,
@@ -30,14 +33,17 @@ const App: React.FC = () => {
         wsService.connect();
 
         wsService.onRoutesEvent((event) => {
+            console.log('[WS] Route event:', event);
             dispatch(applyRoutesWs(event));
         });
 
         wsService.onLocationsEvent((event) => {
+            console.log('[WS] Location event:', event);
             dispatch(applyLocationsWs(event));
         });
 
         wsService.onCoordinatesEvent((event) => {
+            console.log('[WS] Coordinates event:', event);
             dispatch(applyCoordinatesWs(event));
         });
 
